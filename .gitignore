@@ -98,7 +98,8 @@ __pypackages__/
 celerybeat-schedule
 celerybeat.pid
 
-# SageMath parsed files
+data
+*.ipynb
 *.sage.py
 
 # Environments
