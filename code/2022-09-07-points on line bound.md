@@ -19,12 +19,12 @@ from collections import defaultdict
 ```
 
 ```sage
-load('hecke-orbits.sage')
+import hecke_orbits
 ```
 
 ```sage
 _g = 2
-_ymax = 128
+_ymax = 340
 _xmax = 2 * _ymax
 ```
 
