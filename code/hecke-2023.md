@@ -1,0 +1,1927 @@
+---
+jupyter:
+  jupytext:
+    formats: ipynb,md
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.14.0
+  kernelspec:
+    display_name: SageMath 9.6
+    language: sage
+    name: sagemath
+---
+
+# Empty spaces in $\operatorname{Hecke}_5 \cdot (1, 0)$
+
+```sage
+from collections import defaultdict
+```
+
+```sage
+from hecke_orbits import structure,long_diagonals
+```
+
+```sage
+_g = 2
+_ymax = 200
+_xmax = 2 * _ymax
+```
+
+```sage
+# _xmax = 1500
+
+# _ymax = 35
+```
+
+```sage
+_g, _n, _a, _K, _V = structure(_g)
+```
+
+```sage
+# Load long diagonals, or compute them and save them
+
+try:
+    print('Attempting to load...')
+    orb = load('data/orb_{}_{}_{}.sobj'.format(_g, _xmax, _ymax))
+    print('Loaded.')
+except FileNotFoundError:
+    print('Failed to load.\nComputing...')
+    orb = long_diagonals(_g, _xmax, _ymax)
+    print('Computed.\nSaving...')
+    save(orb, 'data/orb_{}_{}_{}.sobj'.format(_g, _xmax, _ymax))
+    print('Saved.')
+```
+
+```sage
+float(len(orb)**2)
+```
+
+```sage
+a = _a
+p,q = [(63*a + 40, 44*a + 27), (103*a + 64, 39*a + 24)]
+```
+
+```sage
+def on_line(x, y):
+    return y == x * (q[1] - p[1]) / (q[0] - p[0]) - (q[1] - p[1]) / (q[0] - p[0]) * p[0] + p[1]
+
+assert on_line(*p)
+assert on_line(*q)
+```
+
+```sage
+[(N(x),N(y)) for (x,y) in orb if on_line(x,y)]
+```
+
+```sage
+len(orb)
+```
+
+```sage
+sum(1 for x, y in orb if x < 128 and y < 128)
+```
+
+```sage
+len(orb)
+```
+
+```sage
+options = {
+    'aspect_ratio': 1,
+    'xmin': 0,
+    'xmax': _xmax,
+    'ymin': 0,
+    'ymax': _ymax
+}
+```
+
+<!-- #raw -->
+p = point2d(orb, size=4)
+<!-- #endraw -->
+
+<!-- #raw -->
+p.show(figsize=50, **options)
+<!-- #endraw -->
+
+<!-- #raw -->
+p.show(figsize=16, aspect_ratio=1, xmin=256, xmax=512, ymin=64, ymax=128)
+<!-- #endraw -->
+
+```sage
+dd = orb
+```
+
+<!-- #raw -->
+dd = long_diagonals(_g, xmax=2048, ymax=1024)
+<!-- #endraw -->
+
+<!-- #raw -->
+pp = point2d(dd, size=4)
+<!-- #endraw -->
+
+<!-- #raw -->
+pp.show(aspect_ratio=1, xmin=2000, xmax=2400, ymin=0, ymax=250, figsize=16)
+<!-- #endraw -->
+
+## A "geometry of numbers" view
+
+<!-- #raw -->
+# ylist = sorted(set([y for (x, y) in orb if 0 < y <= _ymax]))
+<!-- #endraw -->
+
+```sage
+ypoints = defaultdict(list)
+for (x, y) in orb:
+    if 0 <= y < _ymax and x < _a * y:
+        ypoints[y].append(x)
+for y in ypoints:
+    ypoints[y] = sorted(ypoints[y])
+ylist = sorted(ypoints)
+```
+
+```sage
+len(ylist)
+```
+
+```sage
+p = point2d(ylist, size=1, figsize=20)
+```
+
+```sage
+_a.galois_conjugate()
+```
+
+```sage
+yylist = [(y, y.galois_conjugate()) for y in ylist]
+```
+
+```sage
+xx = max(ylist)[0]
+```
+
+```sage
+l = plot(lambda x: _a*x, (0, xx), color='red')
+```
+
+```sage
+a = plot(lambda x: _a*x + x^0.333, (0, xx), color='red')
+b = plot(lambda x: _a*x - x^0.333, (0, xx), color='red')
+```
+
+```sage
+p + a + b
+```
+
+```sage
+xx = max(ylist)
+```
+
+```sage
+pp = point2d(yylist, size=1)
+```
+
+```sage
+aa = plot(lambda x: x^0.667, (0, xx), color='red')
+bb = plot(lambda x: -x^0.667, (0, xx), color='red')
+```
+
+```sage
+gg = pp + aa + bb
+```
+
+```sage
+gg.show(figsize=20)
+```
+
+```sage
+ttlist = defaultdict(list)
+for x, y in yylist:
+    a = floor(x)
+    for t in range(a, a+10):
+        ttlist[t].append(abs(y))
+```
+
+```sage
+ppp = point2d([(a, RDF(mean(b)).log()/RDF(a).log()) for a, b in ttlist.items() if a > 1 and mean(b) > 1], size=2)
+```
+
+```sage
+ppp.show(figsize=(12, 4))
+```
+
+```sage
+ydensity = dict()
+for y in ylist:
+    ydensity[y] = len(ypoints[y])/(_a*y)
+```
+
+```sage
+
+```
+
+```sage
+def x_of_y(y):
+    if y == 0:
+        return _K.one()
+    if y == 1:
+        return _K.zero()
+    for x in ylist:
+        if x > y:
+            raise ValueError("Could not find x for y = {}".format(y))
+        if y in ypoints[x]:
+            return x
+    raise ValueError("Could not find y = {} in ylist".format(y))
+```
+
+```sage
+for y in ylist[:20]:
+    try:
+        x = x_of_y(y)
+    except ValueError:
+        x = '-'
+    print("{:12} {:12} {}".format(str(y), str(x), len(ypoints[y])))
+```
+
+```sage
+point2d(ydensity.items(), size=2)
+```
+
+```sage
+local_density = dict()
+density_local = defaultdict(list)
+```
+
+```sage
+for y in ylist:
+    kmax = [1]
+    yx = ypoints[y]
+    n = len(yx)
+    for j, x in enumerate(yx):
+        k = sum(1 for xx in yx[j:min(j+12, n)] if xx-x < 1)
+        if k > kmax[0]:
+            kmax[0] = k
+    local_density[y] = kmax[0]
+    density_local[kmax[0]].append(y)
+```
+
+```sage
+point2d(local_density.items(), size=2)
+```
+
+```sage
+
+```
+
+```sage
+def plot_b_over_a(n):
+    r"""
+    Plot of the b/a for the y's that get n points in a length 1 horizontal line segment
+    """
+    d = density_local[n]
+    G = list_plot([b/a for (a, b) in d])
+    G += line2d([(0, _a), (len(d) - 1, _a)], color='red')
+    G += line2d([(0, 34/21), (len(d) - 1, 34/21)], color='green')
+    G += line2d([(0, 55/34), (len(d) - 1, 55/34)], color='purple')
+    return G
+```
+
+```sage
+plot_b_over_a(7).show()
+```
+
+```sage
+plot_b_over_a(6).show()
+```
+
+```sage
+plot_b_over_a(5).show()
+```
+
+```sage
+plot_b_over_a(4).show()
+```
+
+```sage
+
+```
+
+```sage
+G = Graphics()
+for y, xx in ypoints.items():
+    G += point2d(((x, y) for x in xx), size=1)
+```
+
+```sage
+G.show(aspect_ratio=1, figsize=50)
+```
+
+```sage
+
+```
+
+```sage
+ypoints[6 + 16*_a]
+```
+
+```sage
+x, y = 18*a + 3, 6 + 16*a
+```
+
+```sage
+RR(y/x)
+```
+
+```sage
+a = _a
+c0 = matrix(_K, 2, [1, a, 0, 1])
+c1 = matrix(_K, 2, [a, a, 1, a])
+c2 = matrix(_K, 2, [a, 1, a, a])
+c3 = matrix(_K, 2, [1, 0, a, 1])
+```
+
+```sage
+d0 = ~c0
+d1 = ~c1
+d2 = ~c2
+d3 = ~c3
+```
+
+```sage
+cone_contraction = [c0, c1, c2, c3]
+```
+
+```sage
+cone_dilation = [d0, d1, d2, d3]
+```
+
+```sage
+def slope(u):
+    r"""
+    Return the slope of this vector
+
+    EXAMPLE::
+
+        sage: x, y = 7 + 22*a, 6 + 16*a
+        sage: u = _V((x, y))
+        sage: slope(u)
+        0.748614518772235
+    """
+    return RR(u[1]/u[0])
+```
+
+```sage
+
+```
+
+```sage
+G = Graphics()
+for yy in ylist:
+    G += point2d(((x, y) for (x, y) in orb if y == yy), hue=yy/2, size=4)
+```
+
+```sage
+G.show(figsize=20, aspect_ratio=1, xmax=400)
+```
+
+```sage
+G.show(aspect_ratio=4, figsize=16, xmin=128, xmax=256)
+```
+
+```sage
+%%time
+GG = []
+R = _ymax
+c = circle((R/2, R/2), R/2, color='white', alpha=0)
+for yy in ylist:
+    ya, yb = a * yy
+    V = ZZ^2
+    vy = V((ya, yb))
+    r = map(lambda x: V(x), [(0, 0), (ya, 0), (ya, yb), (0, yb), (0, 0)])
+    l = line2d(r)
+    for k in range(1, 5):
+        kvy = k * vy
+        l += line2d(map(lambda v: kvy + v, r), hue=yy /2, thickness=0.2)
+    # l = line2d([(0, 0), (ya, 0), (ya, 2*yb), (3*ya, 2*yb), (3*ya, 3*yb), (2*ya, 3*yb), (2*ya, yb), (0, yb)], hue=yy /2, thickness=0.2)
+    p = point2d((x for x, y in orb if y == yy), hue=yy/2, xmin=0, xmax=R/2.5, ymin=0, ymax=R/2.5, size=4)
+    GG.append(c + p + l)
+```
+
+```sage
+len(GG)
+```
+
+```sage
+for g in GG[:12]:
+    g.show()
+```
+
+```sage
+ylist[3], ylist[-2], ylist[-1]
+```
+
+```sage
+''.join(str(int(y.is_prime())) for y in ylist)
+```
+
+```sage
+n = (-_a - 1) * (-3*_a + 1)
+n
+```
+
+<!-- #raw -->
+n.factor??
+<!-- #endraw -->
+
+```sage
+len(ylist)
+```
+
+```sage
+for y in ylist[:30]:
+    print('{:15s} = {:50s}{}'.format(str(y), str(y.factor()), ' (prime)' if y.is_prime() else ''))
+```
+
+<!-- #raw -->
+%%time
+GGG = []
+R = ymax
+c = circle((R/2, R/2), R/2, color='white', alpha=0)
+for yy in ylist:
+    ya, yb = a * yy
+    l = line2d([(0, 0), (ya, 0), (ya, 2*yb), (3*ya, 2*yb), (3*ya, 3*yb), (2*ya, 3*yb), (2*ya, yb), (0, yb)], hue=yy /2)
+    p = point2d((x for (x, y) in orb if y == yy), hue=yy/2, xmin=0, xmax=R/2, ymin=0, ymax=R/2, size=4)
+    GGG.append(c + p + l)
+<!-- #endraw -->
+
+<!-- #raw -->
+ylist = sorted(set(y for x, y in orb if x0 < x < x1))
+<!-- #endraw -->
+
+<!-- #raw -->
+max([ylist[k] - ylist[k - 1] for k in range(1, len(ylist))])
+<!-- #endraw -->
+
+## Density on horizontal lines
+
+```sage
+horiz_fund_domain = defaultdict(list)
+```
+
+```sage
+horiz_count = defaultdict(int)
+```
+
+```sage
+for x, y in orb:
+    if x < _a * y:
+        horiz_fund_domain[y].append(x)
+        horiz_count[y] += 1
+```
+
+```sage
+print(len(horiz_fund_domain))
+print(len(horiz_count))
+```
+
+```sage
+point2d(horiz_count.items(), size=2)
+```
+
+```sage
+point2d(((y, Integer(n)/(_a*y)) for y, n in horiz_count.items()), size=2)
+```
+
+```sage
+p = point2d(((y, Integer(n)/(_a*y)) for y, n in horiz_count.items() if y > 10 and Integer(n)/(_a*y) > 0.2), size=4)
+```
+
+```sage
+pp7 = point2d([(y, Integer(horiz_count[y])/(_a*y)) for y in density_local[7]], size=6, color='red')
+```
+
+```sage
+pp6 = point2d([(y, Integer(horiz_count[y])/(_a*y)) for y in density_local[6]], size=6, color='red')
+```
+
+```sage
+pp5 = point2d([(y, Integer(horiz_count[y])/(_a*y)) for y in density_local[5]], size=6, color='red')
+```
+
+```sage
+pp4 = point2d([(y, Integer(horiz_count[y])/(_a*y)) for y in density_local[5]], size=4, color='red')
+```
+
+```sage
+p + pp7
+```
+
+```sage
+p + pp6
+```
+
+```sage
+p + pp5
+```
+
+```sage
+p + pp7 + pp6 + pp5
+```
+
+```sage
+interesting = [y for y in density_local[5] if Integer(horiz_count[y])/(_a*y) < 0.2]
+```
+
+```sage
+interesting
+```
+
+```sage
+def rectangle_plot(yy, d, size=4, yinfo=False, real_x_values=False, extra_rectangle=False, axes=False, frame=True):
+    """
+    EXAMPLE::
+
+        sage: GG = []
+        sage: for yy in interesting:
+        ....:     GG.append(rectangle_plot(yy, ypoints))
+        sage: for g in GG:
+        ....:     g.show()
+    """
+    ya, yb = _a*yy
+    yya, yyb = yy
+    yyya, yyyb = yy/_a
+    V = ZZ^2
+    vy = V((ya, yb))
+    yx = list(x for x in d[yy])
+    yxab = list((x[0], x[1]) for x in yx)
+    n = sum(1 for x in yx if x < _a*y)
+    print(yx)
+    G = point2d(yxab, hue=yy/2, xmin=-0.5, xmax=2*ya, ymin=-0.5, ymax=yb+0.5, size=size, axes=axes, frame=frame)
+    G += circle((1.0r, 1.0r), 0.5r, color='white', alpha=0)
+    r = map(lambda x: V(x), [(0, 0), (ya, 0), (ya, yb), (0, yb), (0, 0)])
+    G += line2d(r, hue=yy/2, thickness=0.2, alpha=0.5)
+    if extra_rectangle:
+        rr = map(lambda x: V(x), [(yyya, yyyb), (yya, yyyb), (yya, yyb), (yyya, yyb), (yyya, yyyb)])
+        G += line2d(rr, hue=yy/2, thickness=0.2, alpha=0.5)
+    if yinfo:
+        G += text(r"$y = {} + {} \phi${}".format(yy[0], yy[1], " (prime)" if yy.is_prime() else ""), (1.5*ya, 0.3*yb))
+        G += text(r"$y = {}$".format(RDF(floor(1e4*yy)/1e4)), (1.5*ya, 0.2*yb))
+        G += text(r"ratio: {}".format(str(RR(yy[0]/yy[1]))[:7]), (1.5*ya, 0.1*yb))
+        G += text(r"{} points".format(n), (1.5*ya, 0.4*yb))
+    if real_x_values:
+        G += point2d(((x/2, -5) for x in yx), hue=yy/2, xmin=0, xmax=2*ya, ymin=-10, ymax=yb, size=2)
+        G += line2d([(0, -6), (_a * yy/2, -6), (_a * yy/2, -4), (0, -4)], hue=yy/2, thickness=1, alpha=0.5)
+    return G
+```
+
+```sage
+GG = []
+for yy in interesting:
+    GG.append(rectangle_plot(yy, ypoints))
+for g in GG:
+    g.show()
+```
+
+```sage
+GG = []
+R = _ymax
+c = circle((1, 1), 1/2, color='white', alpha=0)
+for yy in density_local[7]:
+    GG.append(rectangle_plot(yy, ypoints))
+for g in GG:
+    g.show()
+```
+
+```sage
+GG = []
+R = _ymax
+c = circle((1, 1), 1/2, color='white', alpha=0)
+for yy in density_local[6]:
+    GG.append(rectangle_plot(yy, ypoints))
+for g in GG:
+    g.show()
+```
+
+```sage
+[y.norm() for y in interesting]
+```
+
+```sage
+[y.norm() for y in density_local[7]]
+```
+
+```sage
+[y.norm() for y in density_local[6]]
+```
+
+```sage
+[Integer(y.norm()).abs().is_prime() for y in density_local[6]]
+```
+
+```sage
+[y.norm() for y in density_local[5]]
+```
+
+```sage
+[Integer(y.norm()).abs().factor() for y in density_local[5]]
+```
+
+```sage
+[y.is_prime() for y in density_local[7]]
+```
+
+```sage
+sum(1 for y in density_local[1] if y.is_prime())/len(density_local[1])
+```
+
+```sage
+def prime_statistics(yy):
+    p = sum(1 for y in yy if y.is_prime())
+    t = len(yy)
+    print('{} primes out of {}'.format(p, t))
+    print('proportion: {}'.format(RDF(p/t)))
+```
+
+```sage
+prime_statistics(density_local[1])
+```
+
+```sage
+prime_statistics(density_local[2])
+```
+
+```sage
+prime_statistics(density_local[3])
+```
+
+```sage
+prime_statistics(density_local[4])
+```
+
+```sage
+prime_statistics(density_local[5])
+```
+
+```sage
+prime_statistics(density_local[6])
+```
+
+```sage
+density_local[7]
+```
+
+```sage
+print([lucas_number2(i,1,-1) for i in range(20)])
+```
+
+```sage
+
+```
+
+```sage
+def x_with_density_n_for_this_y(n, y):
+    kmax = [1]
+    yx = ypoints[y]
+    m = len(yx)
+    res = []
+    for j, x in enumerate(yx):
+        k = sum(1 for xx in yx[j:min(j + 20, m)] if xx - x < 1)
+        if k == n:
+            res = yx[j:j+n]
+    return res
+```
+
+```sage
+density_7_xy = dict([(y, x_with_density_n_for_this_y(7, y)) for y in density_local[7]])
+```
+
+```sage
+density_6_xy = dict([(y, x_with_density_n_for_this_y(6, y)) for y in density_local[6]])
+```
+
+```sage
+density_5_xy = dict([(y, x_with_density_n_for_this_y(5, y)) for y in density_local[5]])
+```
+
+```sage
+len(density_5_xy)
+```
+
+```sage
+density_7_xy
+```
+
+```sage
+for yy, xx in density_7_xy.items():
+    G = point2d(xx)
+    for x in xx:
+        G += text('({}, {})'.format(x[0], x[1]), (x[0] + 2.5, x[1]))
+        G += text(r'$y = {} + {} \phi$'.format(yy[0], yy[1]), (min(xx)[0] - 3, min(xx)[1] - 3))
+        G += text('$N(y) = {}$'.format(yy.norm()), (min(xx)[0] - 3, min(xx)[1] - 4))
+    G.show()
+```
+
+```sage
+density_6_xy
+```
+
+```sage
+for yy, xx in density_6_xy.items():
+    G = point2d(xx)
+    for x in xx:
+        G += text('({}, {})'.format(x[0], x[1]), (x[0] + 2.5, x[1]))
+        G += text(r'$y = {} + {} \phi$'.format(yy[0], yy[1]), (min(xx)[0] - 3, min(xx)[1] - 3))
+        G += text('$N(y) = {}$'.format(yy.norm()), (min(xx)[0] - 3, min(xx)[1] - 4))
+    G.show()
+```
+
+```sage
+for yy, xx in density_5_xy.items():
+    G = point2d(xx)
+    for x in xx:
+        G += text('({}, {})'.format(x[0], x[1]), (x[0] + 2.5, x[1]))
+        G += text(r'$y = {} + {} \phi$'.format(yy[0], yy[1]), (min(xx)[0] - 3, min(xx)[1] - 3))
+        G += text('$N(y) = {}$'.format(yy.norm()), (min(xx)[0] - 3, min(xx)[1] - 4))
+    G.show()
+```
+
+```sage
+density_7_xy
+```
+
+```sage
+GG = []
+for y, xx in density_7_xy.items():
+    GG.append(point2d(((x, y) for x in xx), size=4, color='red'))
+for y, xx in density_6_xy.items():
+    GG.append(point2d(((x, y) for x in xx), size=4, color='orange'))
+for y, xx in density_5_xy.items():
+    GG.append(point2d(((x, y) for x in xx), size=4, color='green'))
+
+```
+
+```sage
+LL = []
+for y, xx in density_7_xy.items():
+    LL.append(line2d(((0, 0), (xx[0], y)), thickness=0.1, color='red', alpha=0.5))
+for y, xx in density_6_xy.items():
+    LL.append(line2d(((0, 0), (xx[0], y)), thickness=0.1, color='orange', alpha=0.5))
+for y, xx in density_5_xy.items():
+    LL.append(line2d(((0, 0), (xx[0], y)), thickness=0.1, color='green', alpha=0.5))
+
+```
+
+```sage
+sum(GG + LL, Graphics()).show()
+```
+
+```sage
+
+```
+
+```sage
+def word_of_vector(u):
+    r"""
+    Return the word in {0, 1, 2, 3} such that prod(c[0]) * (1, 0) equals u
+
+    EXAMPLE::
+
+        sage: u = _V((108 + 173*_a, 118 + 191*_a))
+        sage: word_of_vector(u)
+        [2, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 2]
+    """
+    x, y = u
+    if y == 0:
+        return []
+    if x > _a * y:
+        return [0] + word_of_vector(d0*u)
+    if x > y:
+        return [1] + word_of_vector(d1*u)
+    if x > y * (_a - 1):
+        return [2] + word_of_vector(d2*u)
+    return [3] + word_of_vector(d3*u)
+```
+
+```sage
+for y, xx in density_7_xy.items():
+    for x in xx:
+        print("%12s   %12s   %s" % (x, y, word_of_vector((_V((x, y))))))
+    print()
+```
+
+```sage
+sum(GG, Graphics()).show(xmin=886.8, xmax=887.8, ymin=977, ymax=977.16, figsize=(8,3))
+```
+
+```sage
+
+```
+
+```sage
+density_7_xy.keys()
+```
+
+```sage
+y = 191*a + 118
+xx = density_7_xy[y]
+for x in xx:
+    print(word_of_vector(_V((x, y))))
+```
+
+```sage
+y = 437*a + 270
+xx = density_7_xy[y]
+for x in xx:
+    print(word_of_vector(_V((x, y))))
+```
+
+```sage
+
+```
+
+```sage
+
+```
+
+```sage
+y = 191*a + 118
+```
+
+```sage
+xx = density_7_xy[y]
+```
+
+```sage
+for j, x in enumerate(xx[:-1]):
+    print(matrix(_K, 2, (x, xx[j+1], y, y)).det())
+```
+
+```sage
+
+```
+
+```sage
+ww = [
+    [3, 2, 3],
+    [1, 3, 2],
+    [0, 3, 0, 3],
+    [0, 0, 3, 3, 3, 3],
+    [0, 0, 3, 0, 1],
+    [0, 0, 0, 2, 2],
+    [0, 0, 0, 0, 0, 3, 2],
+    ]
+
+```
+
+```sage
+l = [prod(cone_contraction[j] for j in w)*_V((1, 0)) for w in ww]
+```
+
+```sage
+point2d(l).show(xmin=0, ymin=0, aspect_ratio=1)
+```
+
+```sage
+mm = [prod(cone_contraction[j] for j in w) for w in ww]
+```
+
+```sage
+mm
+```
+
+```sage
+p = point2d(m*v for v in (_V((1, 0)), _V((0, 1))) for m in mm)
+```
+
+```sage
+p
+```
+
+```sage
+l = sum(line2d(m*v for v in (_V((1, 0)), _V((0, 0)), _V((0, 1)))) for m in mm)
+```
+
+```sage
+(p + l).show(xmin=0, ymin=0)
+```
+
+```sage
+ww = [
+    [3, 3, 2, 3],
+    [2, 0, 0, 2],
+    [1, 0, 0, 0, 0, 0, 0, 1],
+    [0, 1, 3, 3, 1],
+    [0, 1, 0, 3, 3],
+    [0, 0, 0, 2, 3, 2],
+    [0, 0, 0, 0, 2, 0, 3],
+]
+```
+
+```sage
+l = [prod(cone_contraction[j] for j in w)*_V((1, 0)) for w in ww]
+```
+
+```sage
+point2d(l).show(xmin=0, ymin=0, aspect_ratio=1)
+```
+
+```sage
+
+```
+
+```sage
+def common_prefix(ww):
+    l = []
+    j = 0
+    while all(len(w) > j for w in ww) and all(w[:j] == ww[0][:j] for w in ww):
+        l = ww[0][:j]
+        j += 1
+    return l
+```
+
+```sage
+y = 191*a + 118
+xx = density_7_xy[y]
+```
+
+```sage
+common_prefix([word_of_vector(_V((x, y))) for x in xx])
+```
+
+```sage
+def contraction_matrix_of_word(w):
+    return prod(cone_contraction[j] for j in w)
+```
+
+```sage
+def vectors_and_words(y, xx):
+    r"""
+    Display information about this set of x, y
+    """
+    ww = [word_of_vector((_V((x, y)))) for x in xx]
+    pp = common_prefix(ww)
+    pm = contraction_matrix_of_word(pp)
+    l = len(pp)
+    tt = [w[l:] for w in ww]
+    print("y = {} = {} ({})".format(y, RDF(y), "prime" if y.is_prime() else "composite"),"norm= {}".format(norm(y)))
+    print("prefix = {}".format(pp))
+    print("contraction matrix of prefix:\n{}".format(pm))
+    for j, x in enumerate(xx):
+        w = tt[j]
+        print("x = %12s   %20s   %s" % (x, contraction_matrix_of_word(w)*_V((1, 0)), tt[j]),"norm= {}".format(norm(x)))
+    S=sorted(xx)
+    for i in range(len(S)-1):
+        print(S[i+1]-S[i],norm(S[i+1]-S[i]),(S[i+1]-S[i])/2)
+```
+
+```sage
+for y, xx in density_7_xy.items():
+    vectors_and_words(y, xx)
+    print()
+```
+
+```sage
+for y, xx in density_6_xy.items():
+    vectors_and_words(y, xx)
+    print()
+```
+
+```sage
+for y, xx in density_5_xy.items():
+    vectors_and_words(y, xx)
+    print()
+```
+
+```sage
+def plot_vectors_y_xx(y, xx):
+    ww = [word_of_vector((_V((x, y)))) for x in xx]
+    pp = common_prefix(ww)
+    pm = prod(cone_contraction[j] for j in pp) # prefix matrix
+    pmi = ~pm                                  # prefix matrix inverse
+    l = len(pp)
+    tt = [w[l:] for w in ww]                   # tails
+    p = [prod(cone_contraction[j] for j in w)*_V((1, 0)) for w in tt]
+    # eigenlines
+    ea = [line2d([(0, 0), pm*_V(v)], color='red') for v in [(1, 0), (-1, 0), (0, 1), (0, -1)]]
+    eb = [line2d([(0, 0), pmi*_V(v)], color='green') for v in [(1, 0), (-1, 0), (0, 1), (0, -1)]]
+    return sum(ea + eb, point2d(p))
+```
+
+```sage
+for g in (plot_vectors_y_xx(y, xx) for y, xx in density_7_xy.items()):
+    g.show(xmin=-80, ymin=-55, xmax=80, ymax=55, aspect_ratio=0.5, figsize=6)
+```
+
+```sage
+for xy in density_7_xy.items():
+    print(xy)
+```
+
+```sage
+
+```
+
+```sage
+for g in (plot_vectors_y_xx(y, xx) for y, xx in density_6_xy.items()):
+    g.show(xmin=-80, ymin=-55, xmax=80, ymax=55, aspect_ratio=0.5, figsize=6)
+```
+
+```sage
+for g in (plot_vectors_y_xx(y, xx) for y, xx in density_5_xy.items()):
+    g.show(xmin=-80, ymin=-55, xmax=80, ymax=55, aspect_ratio=0.5, figsize=6)
+```
+
+```sage
+
+```
+
+```sage
+
+```
+
+Let's enlarge the database!
+Do this by mapping the 1000 x 1000 cloud into the good cones!
+
+```sage
+m = prod(cone_contraction[j] for j in [2, 0, 1])
+```
+
+```sage
+orbb = [m*u for u in orb]
+```
+
+```sage
+orbb_ylist = sorted(set([y for (x, y) in orbb]))
+```
+
+```sage
+orbb_ypoints = defaultdict(list)
+for x, y in orbb:
+    if 0 < y:
+        orbb_ypoints[y].append(x)
+for y in orbb_ypoints:
+    orbb_ypoints[y] = sorted(orbb_ypoints[y])
+orbb_ylist = sorted(orbb_ypoints)
+```
+
+```sage
+orbb_local_density = dict()
+orbb_density_local = defaultdict(list)
+```
+
+```sage
+for y in orbb_ylist:
+    kmax = [1]
+    yx = orbb_ypoints[y]
+    n = len(yx)
+    for j, x in enumerate(yx):
+        k = sum(1 for xx in yx[j:min(j+12, n)] if xx-x < 1)
+        if k > kmax[0]:
+            kmax[0] = k
+    orbb_local_density[y] = kmax[0]
+    orbb_density_local[kmax[0]].append(y)
+```
+
+```sage
+orbb_density_local.keys()
+```
+
+```sage
+for y in orbb_density_local[10]:
+    print("%20s      %s" % (y, RR(y)))
+```
+
+```sage
+for n in sorted(orbb_density_local.keys())[::-1]:
+    print("%8s   %s" %(n, len(orbb_density_local[n])))
+```
+
+```sage
+def orbb_x_with_density_n_for_this_y(n, y):
+    kmax = [1]
+    yx = orbb_ypoints[y]
+    m = len(yx)
+    res = []
+    for j, x in enumerate(yx):
+        k = sum(1 for xx in yx[j:min(j+12, m)] if xx - x < 1)
+        if k == n:
+            res = yx[j:j + n]
+    return res
+```
+
+```sage
+orbb_density_10_xy = dict([(y, orbb_x_with_density_n_for_this_y(10, y)) for y in orbb_density_local[10]])
+```
+
+```sage
+orbb_density_9_xy = dict([(y, orbb_x_with_density_n_for_this_y(9, y)) for y in orbb_density_local[9]])
+```
+
+```sage
+for y, xx in orbb_density_10_xy.items():
+    vectors_and_words(y, xx)
+    print()
+```
+
+```sage
+for y, xx in orbb_density_9_xy.items():
+    vectors_and_words(y, xx)
+    print()
+```
+
+```sage
+for g in (plot_vectors_y_xx(y, xx) for y, xx in orbb_density_10_xy.items()):
+    g.show(aspect_ratio=0.5, figsize=6)
+```
+
+```sage
+sum((plot_vectors_y_xx(y, xx) for y, xx in orbb_density_10_xy.items()), Graphics()).show(aspect_ratio=0.5, figsize=6)
+```
+
+```sage
+
+```
+
+```sage
+for yy, xx in orbb_density_10_xy.items():
+    G = point2d(xx)
+    amin, amax = min(x[0] for x in xx), max(x[0] for x in xx)
+    apad = (amax - amin)/10
+    bmin, bmax = min(x[1] for x in xx), max(x[1] for x in xx)
+    bpad = (bmax - bmin)/10
+    for x in xx:
+        G += text('({}, {})'.format(x[0], x[1]), (amax+apad, x[1]))
+        G += text(r'$y = {} + {} \phi$'.format(yy[0], yy[1]), (amin, bmin + bpad), horizontal_alignment='left')
+        G += text('$N(y) = {}$'.format(yy.norm()), (amin, bmin + bpad/2), horizontal_alignment='left')
+        G += text('{}'.format("prime" if yy.is_prime() else "composite: {}".format(yy.factor())), (amin, bmin), horizontal_alignment='left')
+    G.show()
+```
+
+```sage
+for yy, xx in orbb_density_9_xy.items():
+    G = point2d(xx)
+    amin, amax = min(x[0] for x in xx), max(x[0] for x in xx)
+    apad = (amax - amin)/10
+    bmin, bmax = min(x[1] for x in xx), max(x[1] for x in xx)
+    bpad = (bmax - bmin)/10
+    for x in xx:
+        G += text('({}, {})'.format(x[0], x[1]), (amax+apad, x[1]))
+        G += text(r'$y = {} + {} \phi$'.format(yy[0], yy[1]), (amin, bmin + bpad), horizontal_alignment='left')
+        G += text('$N(y) = {}$'.format(yy.norm()), (amin, bmin + bpad/2), horizontal_alignment='left')
+        G += text('{}'.format("prime" if yy.is_prime() else "composite: {}".format(yy.factor())), (amin, bmin), horizontal_alignment='left')
+    G.show()
+```
+
+```sage
+for yy, xx in orbb_density_10_xy.items():
+    G = point2d(xx, color='red')
+    amin, amax = min(x[0] for x in xx), max(x[0] for x in xx)
+    apad = (amax - amin)/10
+    bmin, bmax = min(x[1] for x in xx), max(x[1] for x in xx)
+    bpad = (bmax - bmin)/10
+    for x in xx:
+        G += text('({}, {})'.format(x[0], x[1]), (amax+apad, x[1]))
+        G += text(r'$y = {} + {} \phi$'.format(yy[0], yy[1]), (amin, bmin + bpad), horizontal_alignment='left')
+        G += text('$N(y) = {}$'.format(yy.norm()), (amin, bmin + bpad/2), horizontal_alignment='left')
+        G += text('{}'.format("prime" if yy.is_prime() else "composite: {}".format(yy.factor())), (amin, bmin), horizontal_alignment='left')
+    G.show()
+```
+
+```sage
+_a^13
+```
+
+```sage
+y = 4312 * 6977* _a
+```
+
+```sage
+y = 4341 + 7024 * _a
+```
+
+```sage
+y = 4341 + 7024 * _a
+print("y = {}".format(y))
+print("  = {}".format(y.factor()))
+for f in y.factor():
+    print("%12s   %s   %s" % (f[0], f[1], f[0].norm()))
+```
+
+```sage
+y = 4312 + 6977* _a
+print("y = {}".format(y))
+print("  = {}".format(y.factor()))
+for f in y.factor():
+    print("%12s   %s   %s" % (f[0], f[1], f[0].norm()))
+```
+
+```sage
+
+```
+
+```sage
+
+```
+
+```sage
+mm = prod(cone_contraction[j] for j in [2, 0, 1, 0, 0, 0, 0, 0])
+```
+
+```sage
+orbc = [mm*u for u in orb]
+```
+
+```sage
+orbc_ylist = sorted(set([y for (x, y) in orbc]))
+```
+
+```sage
+orbc_ypoints = defaultdict(list)
+for x, y in orbc:
+    if 0 < y:
+        orbc_ypoints[y].append(x)
+for y in orbc_ypoints:
+    orbc_ypoints[y] = sorted(orbc_ypoints[y])
+orbc_ylist = sorted(orbc_ypoints)
+```
+
+```sage
+orbc_local_density = dict()
+orbc_density_local = defaultdict(list)
+```
+
+```sage
+for y in orbc_ylist:
+    kmax = [1]
+    yx = orbc_ypoints[y]
+    n = len(yx)
+    for j, x in enumerate(yx):
+        k = sum(1 for xx in yx[j:min(j + 20, n)] if xx - x < 1)
+        if k > kmax[0]:
+            kmax[0] = k
+    orbc_local_density[y] = kmax[0]
+    orbc_density_local[kmax[0]].append(y)
+```
+
+```sage
+orbc_density_local.keys()
+```
+
+```sage
+for y in orbc_density_local[18]:
+    print("%20s      %s" % (y, RR(y)))
+```
+
+```sage
+for y in orbc_density_local[15]:
+    print("%20s      %s" % (y, RR(y)))
+```
+
+```sage
+for y in orbc_density_local[14]:
+    print("%20s      %s" % (y, RR(y)))
+```
+
+```sage
+for y in orbc_density_local[13]:
+    print("%20s      %s" % (y, RR(y)))
+```
+
+```sage
+def orbc_x_with_density_n_for_this_y(n, y):
+    kmax = [1]
+    yx = orbc_ypoints[y]
+    m = len(yx)
+    res = []
+    for j, x in enumerate(yx):
+        k = sum(1 for xx in yx[j:min(j + 20, m)] if xx - x < 1)
+        if k == n:
+            res = yx[j:j + n]
+    return res
+```
+
+```sage
+orbc_density_18_xy = dict([(y, orbc_x_with_density_n_for_this_y(18, y)) for y in orbc_density_local[18]])
+```
+
+```sage
+orbc_density_15_xy = dict([(y, orbc_x_with_density_n_for_this_y(15, y)) for y in orbc_density_local[15]])
+```
+
+```sage
+orbc_density_14_xy = dict([(y, orbc_x_with_density_n_for_this_y(14, y)) for y in orbc_density_local[14]])
+```
+
+```sage
+orbc_density_13_xy = dict([(y, orbc_x_with_density_n_for_this_y(13, y)) for y in orbc_density_local[13]])
+```
+
+```sage
+for yy, xx in orbc_density_18_xy.items():
+    G = point2d(xx)
+    amin, amax = min(x[0] for x in xx), max(x[0] for x in xx)
+    apad = (amax - amin)/10
+    bmin, bmax = min(x[1] for x in xx), max(x[1] for x in xx)
+    bpad = (bmax - bmin)/10
+    for x in xx:
+        G += text('({}, {})'.format(x[0], x[1]), (amax + apad, x[1]))
+        G += text(r'$y = {} + {} \phi$'.format(yy[0], yy[1]), (amin, bmin + bpad), horizontal_alignment='left')
+        G += text('$N(y) = {}$'.format(yy.norm()), (amin, bmin + bpad/2), horizontal_alignment='left')
+        G += text('{}'.format("prime" if yy.is_prime() else "composite: {}".format(yy.factor())), (amin, bmin), horizontal_alignment='left')
+    G.show()
+```
+
+```sage
+for yy, xx in orbc_density_15_xy.items():
+    G = point2d(xx)
+    amin, amax = min(x[0] for x in xx), max(x[0] for x in xx)
+    apad = (amax - amin)/10
+    bmin, bmax = min(x[1] for x in xx), max(x[1] for x in xx)
+    bpad = (bmax - bmin)/10
+    for x in xx:
+        G += text('({}, {})'.format(x[0], x[1]), (amax + apad, x[1]))
+        G += text(r'$y = {} + {} \phi$'.format(yy[0], yy[1]), (amin, bmin + bpad), horizontal_alignment='left')
+        G += text('$N(y) = {}$'.format(yy.norm()), (amin, bmin + bpad/2), horizontal_alignment='left')
+        G += text('{}'.format("prime" if yy.is_prime() else "composite: {}".format(yy.factor())), (amin, bmin), horizontal_alignment='left')
+    G.show()
+```
+
+```sage
+for yy, xx in orbc_density_14_xy.items():
+    G = point2d(xx)
+    amin, amax = min(x[0] for x in xx), max(x[0] for x in xx)
+    apad = (amax - amin)/10
+    bmin, bmax = min(x[1] for x in xx), max(x[1] for x in xx)
+    bpad = (bmax - bmin)/10
+    for x in xx:
+        G += text('({}, {})'.format(x[0], x[1]), (amax+apad, x[1]))
+        G += text(r'$y = {} + {} \phi$'.format(yy[0], yy[1]), (amin, bmin + bpad), horizontal_alignment='left')
+        G += text('$N(y) = {}$'.format(yy.norm()), (amin, bmin + bpad/2), horizontal_alignment='left')
+        G += text('{}'.format("prime" if yy.is_prime() else "composite: {}".format(yy.factor())), (amin, bmin), horizontal_alignment='left')
+    G.show()
+```
+
+```sage
+for yy, xx in orbc_density_13_xy.items():
+    G = point2d(xx)
+    amin, amax = min(x[0] for x in xx), max(x[0] for x in xx)
+    apad = (amax - amin)/10
+    bmin, bmax = min(x[1] for x in xx), max(x[1] for x in xx)
+    bpad = (bmax - bmin)/10
+    for x in xx:
+        G += text('({}, {})'.format(x[0], x[1]), (amax + apad, x[1]))
+        G += text(r'$y = {} + {} \phi$'.format(yy[0], yy[1]), (amin, bmin + bpad), horizontal_alignment='left')
+        G += text('$N(y) = {}$'.format(yy.norm()), (amin, bmin + bpad/2), horizontal_alignment='left')
+        G += text('{}'.format("prime" if yy.is_prime() else "composite: {}".format(yy.factor())), (amin, bmin), horizontal_alignment='left')
+    G.show()
+```
+
+```sage
+
+```
+
+```sage
+for y, xx in orbc_density_18_xy.items():
+    vectors_and_words(y, xx)
+    print()
+```
+
+```sage
+for y, xx in orbc_density_15_xy.items():
+    vectors_and_words(y, xx)
+    print()
+```
+
+```sage
+for y, xx in orbc_density_14_xy.items():
+    vectors_and_words(y, xx)
+    print()
+```
+
+```sage
+
+```
+
+```sage
+mmd = prod(cone_contraction[j] for j in [2, 0, 1, 0, 0, 0, 0, 0, 1])
+```
+
+```sage
+orbd = [mmd*u for u in orb]
+```
+
+```sage
+orbd_local_density = dict()
+orbd_density_local = defaultdict(list)
+```
+
+```sage
+orbd_ypoints = defaultdict(list)
+for x, y in orbd:
+    if 0 < y:
+        orbd_ypoints[y].append(x)
+for y in orbd_ypoints:
+    orbd_ypoints[y] = sorted(orbd_ypoints[y])
+orbd_ylist = sorted(orbd_ypoints)
+```
+
+```sage
+for y in orbd_ylist:
+    kmax = [1]
+    yx = orbd_ypoints[y]
+    n = len(yx)
+    for j, x in enumerate(yx):
+        k = sum(1 for xx in yx[j:min(j+25, n)] if xx-x < 1)
+        if k > kmax[0]:
+            kmax[0] = k
+    orbd_local_density[y] = kmax[0]
+    orbd_density_local[kmax[0]].append(y)
+```
+
+```sage
+orbd_density_local.keys()
+```
+
+```sage
+mme = prod(cone_contraction[j] for j in [2, 0, 1, 0, 0, 0, 0, 0, 3])
+```
+
+```sage
+orbe = [mme*u for u in orb]
+```
+
+```sage
+orbe_local_density = dict()
+orbe_density_local = defaultdict(list)
+```
+
+```sage
+orbe_ypoints = defaultdict(list)
+for x, y in orbe:
+    if 0 < y:
+        orbe_ypoints[y].append(x)
+for y in orbe_ypoints:
+    orbe_ypoints[y] = sorted(orbe_ypoints[y])
+orbe_ylist = sorted(orbe_ypoints)
+```
+
+```sage
+for y in orbe_ylist:
+    kmax = [1]
+    yx = orbe_ypoints[y]
+    n = len(yx)
+    for j, x in enumerate(yx):
+        k = sum(1 for xx in yx[j:min(j + 25, n)] if xx - x < 1)
+        if k > kmax[0]:
+            kmax[0] = k
+    orbe_local_density[y] = kmax[0]
+    orbe_density_local[kmax[0]].append(y)
+```
+
+```sage
+orbe_density_local.keys()
+```
+
+```sage
+
+```
+
+```sage
+mmf = prod(cone_contraction[j] for j in [2, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0])
+```
+
+```sage
+orbf = [mmf*u for u in orb]
+```
+
+```sage
+orbf_local_density = dict()
+orbf_density_local = defaultdict(list)
+```
+
+```sage
+orbf_ypoints = defaultdict(list)
+for x, y in orbf:
+    if 0 < y:
+        orbf_ypoints[y].append(x)
+for y in orbf_ypoints:
+    orbf_ypoints[y] = sorted(orbf_ypoints[y])
+orbf_ylist = sorted(orbf_ypoints)
+```
+
+```sage
+for y in orbf_ylist:
+    kmax = [1]
+    yx = orbf_ypoints[y]
+    n = len(yx)
+    for j, x in enumerate(yx):
+        k = sum(1 for xx in yx[j:min(j + 30, n)] if xx - x < 1)
+        if k > kmax[0]:
+            kmax[0] = k
+    orbf_local_density[y] = kmax[0]
+    orbf_density_local[kmax[0]].append(y)
+```
+
+```sage
+def orbf_x_with_density_n_for_this_y(n, y):
+    kmax = [1]
+    yx = orbf_ypoints[y]
+    m = len(yx)
+    res = []
+    for j, x in enumerate(yx):
+        k = sum(1 for xx in yx[j:min(j + 30, m)] if xx - x < 1)
+        if k == n:
+            res = yx[j:j+n]
+    return res
+```
+
+```sage
+orbf_density_local.keys()
+```
+
+```sage
+nmaxf = max(orbf_density_local)
+```
+
+```sage
+orbf_density_max_xy = dict([(y, orbf_x_with_density_n_for_this_y(nmaxf, y)) for y in orbf_density_local[nmaxf]])
+```
+
+```sage
+for y, xx in orbf_density_max_xy.items():
+    vectors_and_words(y, xx)
+    print()
+```
+
+```sage
+
+```
+
+**Lemma**
+- take two points lying on a common horizontal line, at distance d from each other
+- then their images under any matrix in the group are always at distance >= d
+
+```sage
+horiz_by_floor = dict()
+```
+
+```sage
+horiz_max_with_same_floor = defaultdict(int)
+```
+
+```sage
+for y, xx in horiz_fund_domain.items():
+    d = defaultdict(int)
+    for x in xx:
+        d[floor(x)] += 1
+    horiz_by_floor[y] = d
+    horiz_max_with_same_floor[y] = max(d.itervalues())
+```
+
+```sage
+point2d(horiz_max_with_same_floor.items(), size=4)
+```
+
+```sage
+for y, n in horiz_max_with_same_floor.items():
+    if n > 4:
+        print "{:20s} {}".format(y, n)
+```
+
+```sage
+(_a * 118).n()
+```
+
+```sage
+map(numerical_approx,
+    [254/157, 332/205, 395/244, 296/183, 217/134, 442/273, 128/79 , 421/260, 437/270, 191/118, 238/147, ])
+```
+
+```sage
+for y, n in horiz_max_with_same_floor.items():
+    if n == 4:
+        print "{:20s} {}".format(y, (y[1]/y[0]).numerical_approx())
+```
+
+```sage
+point2d((y[1]/y[0], n) for y, n in local_density.items() if y[0])
+```
+
+```sage
+dd = density_local
+rr = dict()
+nn = dict()
+for d, yy in dd.iteritems():
+    rr[d] = (min(yy), max(yy))
+    nn[d] = len(dd)
+```
+
+```sage
+G1 = histogram([y[1]/y[0] for y in density_local[1] if y[0]], bins=1024)
+```
+
+```sage
+G2 = histogram([y[1]/y[0] for y in density_local[2] if y[0]], bins=1024)
+```
+
+```sage
+G3 = histogram([y[1]/y[0] for y in density_local[3] if y[0]], bins=1024)
+```
+
+```sage
+G4 = histogram([y[1]/y[0] for y in density_local[4] if y[0]], bins=1024)
+```
+
+```sage
+G5 = histogram([y[1]/y[0] for y in density_local[5] if y[0]], bins=1024)
+```
+
+```sage
+G6 = histogram([y[1]/y[0] for y in density_local[6] if y[0]], bins=1024)
+```
+
+```sage
+G7 = histogram([y[1]/y[0] for y in density_local[7] if y[0]], bins=1024)
+```
+
+```sage
+
+```
+
+```sage
+def vlines(xc, h):
+    return add((line2d([(x, 0), (x, h)], color=c, alpha=0.5) for (x, c) in xc), Graphics())
+```
+
+```sage
+L = [
+    (_a, 'red'),
+    (1, 'green'),
+    (2, 'green'),
+    (3, 'green'),
+    (2.5, 'green'),
+    (1.5, 'green'),
+    (1+1/3, 'blue'),
+    (1+2/3, 'blue'),
+]
+```
+
+```sage
+G1 + vlines(L, 180)
+```
+
+```sage
+G2 + vlines(L, 80)
+```
+
+```sage
+G3
+```
+
+```sage
+G4
+```
+
+```sage
+G5
+```
+
+```sage
+G6
+```
+
+```sage
+G7
+```
+
+```sage
+line2d([(_a, 0), (_a, 7)], color='red') + point2d(
+    (y[1]/y[0], n)
+    for y, n in horiz_max_with_same_floor.items()
+    if y[0] and 1.61 < y[1]/y[0] < 1.63)
+```
+
+```sage
+for y, n in horiz_max_with_same_floor.items():
+    if n > 4:
+        d = horiz_by_floor[y]
+        print "{:20s} {} {}".format(y, n, [x for x in d if d[x] == n])
+```
+
+```sage
+point2d((x, y) for (x, y) in dd if 290 < x < 315 and 415 < y < 440)
+```
+
+```sage
+point2d((x, y) for (x, y) in dd if 300 < x < 305 and 425 < y < 430)
+```
+
+```sage
+len(ylist)
+```
+
+```sage
+print max(ylist)
+print RR(max(ylist))
+```
+
+```sage
+ylist_ab_comp = point2d(ylist, size=2)
+```
+
+```sage
+ylist_ab_prime = point2d((y for y in ylist if y.is_prime()), color='red', size=3)
+```
+
+```sage
+r = 200
+L = line2d(((0, 0), (r, r)), color='grey', alpha=0.2)
+L += line2d(((0, 0), (r, r*1.25)), color='grey', alpha=0.2)
+L += line2d(((0, 0), (r, r*_a)), color='grey', alpha=0.2)
+L += line2d(((0, 0), (r, r*2)), color='grey', alpha=0.2)
+L += line2d(((0, 0), (r, r*2.3333)), color='grey', alpha=0.2)
+L += line2d(((0, 0), (r, r*2.5)), color='grey', alpha=0.2)
+L += line2d(((0, 0), (r, r*(3))), color='grey', alpha=0.2)
+
+```
+
+```sage
+# xmax, ymax, figsize = 200, 300, 30
+xmax, ymax, figsize = 20, 30, 8
+# G = ylist_ab + ylist_ab_prime + L
+G = ylist_ab + ylist_ab_prime
+G.show(xmin=-1, xmax=xmax, ymin=-1, ymax=ymax, aspect_ratio=1, figsize=figsize, axes=False, frame=True)
+```
+
+```sage
+ypoints[_a]
+```
+
+```sage
+GG = []
+for k in (168 .. 188):
+    GG.append(rectangle_plot(k*_a, ypoints, yinfo=True, size=20, axes=False, frame=True))
+for g in GG:
+    g.show()
+```
+
+```sage
+GG = []
+for k in (168 .. 188):
+    GG.append(rectangle_plot(k*_a+(k-1), ypoints, yinfo=True, size=20, axes=False, frame=True))
+for g in GG:
+    g.show()
+```
+
+```sage
+GG = []
+for k in (30 .. 40):
+    GG.append(rectangle_plot(_a + k*(1+3*_a), ypoints, yinfo=True, size=20, axes=False, frame=True))
+for g in GG:
+    g.show()
+```
+
+```sage
+GG = []
+for k in (30 .. 40):
+    GG.append(rectangle_plot(1 + k*(1+1*_a), ypoints, yinfo=True, size=20, axes=False, frame=True))
+for g in GG:
+    g.show()
+```
+
+```sage
+GG = []
+for k in (30 .. 40):
+    GG.append(rectangle_plot(_a + k*(1+1*_a), ypoints, yinfo=True, size=20, axes=False, frame=True))
+for g in GG:
+    g.show()
+```
+
+```sage
+# xmax, ymax, figsize = 200, 300, 30
+xmax, ymax, figsize = 20, 30, 8
+# G = ylist_ab + ylist_ab_prime + L
+G = ylist_ab + ylist_ab_prime
+for y in ylist:
+    if y < 7:
+        for x in ypoints[y]:
+            if x <= _a*y and y <= _a*x:
+                G += line2d([(y[0], y[1]), (x[0], x[1])], color='grey', alpha=0.5)
+#             if x < y/_a:
+#                 G += line2d([(y[0], y[1]), (x[0], x[1])], color='grey', alpha=0.5)
+G.show(xmin=-1, xmax=xmax, ymin=-1, ymax=ymax, aspect_ratio=1, figsize=figsize, axes=False, frame=True)
+```
+
+```sage
+# build a digraph with edges x -> y if...
+
+xmax, ymax, figsize = 20, 30, 8
+# G = ylist_ab + ylist_ab_prime + L
+G = ylist_ab + ylist_ab_prime
+for y in ylist:
+    if y < 20:
+        for x in ypoints[y]:
+            if x <= _a*y and y <= _a*x:
+                G += line2d([(y[0], y[1]), (x[0], x[1])], color='grey', alpha=0.5)
+G.show(xmin=-1, xmax=xmax, ymin=-1, ymax=ymax, aspect_ratio=1, figsize=figsize, axes=False, frame=True)
+```
+
+```sage
+ypoints[]
+```
+
+```sage
+yfloor = defaultdict(list)
+for y in ypoints:
+    yfloor[y.floor()].append(y)
+```
+
+```sage
+for n, yy in yfloor.items():
+    if n < 50:
+        print n, yy
+```
+
+```sage
+yfloorn = dict()
+for n, yy in yfloor.items():
+    yfloorn[n] = len(yy)
+```
+
+```sage
+G = point2d(yfloorn.items(), size=8, ymin=0)
+G += plot(lambda x: 0.15*exp(0.5*ln(x))*ln(x), (1, 1000), color='red')
+G
+```
+
+```sage
+G = point2d(((n, ln(RDF(k))/ln(RDF(n))) for (n, k) in yfloorn.items() if y > 1 and n > 1), size=8, ymin=0)
+G += line2d(((0, 0.5), (1000, 0.5)), color='red')
+G
+```
+
+```sage
+point2d(yfloorn.items(), size=8, ymin=0, xmax=300, ymax=20)
+```
+
+```sage
+point2d((y, len(xx)) for y, xx in ypoints.items())
+```
+
+```sage
+ypoints_sorted = []
+for y in sorted(ypoints)
+    if not ypoints_sorted:
+        ypoints_sorted.append((y, len(ypoints[y])))
+```
+
+```sage
+_a
+```
+
+```sage
+cone_contraction = [c0, c1, c2, c3]
+cc = cone_contraction
+```
+
+```sage
+for x in range(4):
+    for y in range(4):
+        print("{}{} {}".format(x, y, (cc[x]*cc[y]).list()))
+```
+
+```sage
+data = [(y, float(n)/y) for n, y in enumerate(ylist)]
+```
+
+```sage
+a, b, c, x = SR.var('a b c x')
+model(x) = a * x^b
+d = find_fit(data[-1000:], model, solution_dict=True)
+print(d)
+```
+
+```sage
+len(ylist)
+```
+
+<!-- #raw -->
+find_fit?
+<!-- #endraw -->
+
+```sage
+p = point2d(data, size=1)
+```
+
+```sage
+cur = plot(lambda x: model.subs(d)(x), (ylist[1000], ylist[-1]), color='red', thickness=0.4)
+```
+
+```sage
+p + cur
+```
+
+```sage
+
+```
